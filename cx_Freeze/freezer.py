@@ -113,7 +113,7 @@ def get_resource_file_path(dirName, name, ext):
 
 class Freezer(object):
 
-    def __init__(self, executables, constantsModules = [], includes = [],
+    def __init__(self, executables, constantsModule, includes = [],
             excludes = [], packages = [], replacePaths = [], compress = True,
             optimizeFlag = 0, path = None,
             targetDir = None, binIncludes = [], binExcludes = [],
@@ -123,7 +123,7 @@ class Freezer(object):
             includeMSVCR = False, zipIncludePackages = [],
             zipExcludePackages = ["*"]):
         self.executables = list(executables)
-        self.constantsModules = list(constantsModules)
+        self.constantsModule = constantsModule
         self.includes = list(includes)
         self.excludes = list(excludes)
         self.packages = list(packages)
@@ -185,7 +185,12 @@ class Freezer(object):
             shutil.copymode(source, target)
         self.filesCopied[normalizedTarget] = None
         if copyDependentFiles \
-                and source not in self.finder.excludeDependentFiles:
+                and source not in self.finder.exclude_dependent_files:
+            # Always copy dependent files on root directory
+            # to allow to set relative reference
+            if sys.platform == 'darwin':
+                targetDir = self.targetDir
+            sourceDir = os.path.dirname(source)
             for source in self._GetDependentFiles(source):
                 target = os.path.join(targetDir, os.path.basename(source))
                 self._CopyFile(source, target, copyDependentFiles)
@@ -332,7 +337,9 @@ class Freezer(object):
         if argsSource is None:
             argsSource = self
         finder = cx_Freeze.ModuleFinder(self.includeFiles, self.excludes,
-                self.path, self.replacePaths)
+                self.path, self.replacePaths, self.zipIncludeAllPackages,
+                self.zipExcludePackages, self.zipIncludePackages,
+                self.constantsModule, self.zipIncludes)
         for name in self.namespacePackages:
             package = finder.IncludeModule(name, namespace = True)
             package.ExtendPath()
@@ -444,17 +451,6 @@ class Freezer(object):
 
         return True
 
-    def _ShouldIncludeInFileSystem(self, module):
-        if module.parent is not None:
-            return self._ShouldIncludeInFileSystem(module.parent)
-        if module.path is None or module.file is None:
-            return False
-        if self.zipIncludeAllPackages \
-                and module.name not in self.zipExcludePackages \
-                or module.name in self.zipIncludePackages:
-            return False
-        return True
-
     def _VerifyConfiguration(self):
         if self.compress is None:
             self.compress = True
@@ -485,8 +481,7 @@ class Freezer(object):
             executable._VerifyConfiguration(self)
 
     def _WriteModules(self, fileName, finder):
-        for module in self.constantsModules:
-            module.Create(finder)
+        self.constantsModule.Create(finder)
         modules = [m for m in finder.modules \
                 if m.name not in self.excludeModules]
         modules.sort(key = lambda m: m.name)
@@ -512,7 +507,7 @@ class Freezer(object):
             # require will be found in a location relative to where
             # they are located on disk; these packages will fail with strange
             # errors when they are written to a zip file instead
-            includeInFileSystem = self._ShouldIncludeInFileSystem(module)
+            includeInFileSystem = module.WillBeStoredInFileSystem()
 
             # if the module refers to a package, check to see if this package
             # should be included in the zip file or should be written to the
@@ -587,8 +582,16 @@ class Freezer(object):
                 outFile.writestr(zinfo, data)
 
         # write any files to the zip file that were requested specially
-        for sourceFileName, targetFileName in self.zipIncludes:
-            outFile.write(sourceFileName, targetFileName)
+        for sourceFileName, targetFileName in finder.zip_includes:
+            if os.path.isdir(sourceFileName):
+                for dirPath, _, fileNames in os.walk(sourceFileName):
+                    basePath = dirPath[len(sourceFileName):]
+                    targetPath = targetFileName + basePath.replace("\\", "/")
+                    for name in fileNames:
+                        outFile.write(os.path.join(dirPath, name),
+                                targetPath + "/" + name)
+            else:
+                outFile.write(sourceFileName, targetFileName)
 
         outFile.close()
 
@@ -622,7 +625,7 @@ class Freezer(object):
         self._RemoveFile(fileName)
         self._WriteModules(fileName, self.finder)
 
-        for sourceFileName, targetFileName in self.includeFiles:
+        for sourceFileName, targetFileName in self.finder.include_files:
             if os.path.isdir(sourceFileName):
                 # Copy directories by recursing into them.
                 # Can't use shutil.copytree because we may need dependencies
@@ -703,12 +706,22 @@ class Executable(object):
 class ConstantsModule(object):
 
     def __init__(self, releaseString = None, copyright = None,
-            moduleName = "BUILD_CONSTANTS", timeFormat = "%B %d, %Y %H:%M:%S"):
+            moduleName="BUILD_CONSTANTS", timeFormat="%B %d, %Y %H:%M:%S",
+            constants=[]):
         self.moduleName = moduleName
         self.timeFormat = timeFormat
         self.values = {}
         self.values["BUILD_RELEASE_STRING"] = releaseString
         self.values["BUILD_COPYRIGHT"] = copyright
+        for constant in constants:
+            parts = constant.split("=")
+            if len(parts) == 1:
+                name = constant
+                value = None
+            else:
+                name, stringValue = parts
+                value = eval(stringValue)
+            self.values[name] = value
 
     def Create(self, finder):
         """Create the module which consists of declaration statements for each
@@ -718,7 +731,7 @@ class ConstantsModule(object):
         for module in finder.modules:
             if module.file is None:
                 continue
-            if module.inZipFile:
+            if module.source_is_zip_file:
                 continue
             if not os.path.exists(module.file):
                 raise ConfigError("no file named %s (for module %s)",

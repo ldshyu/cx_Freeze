@@ -8,14 +8,22 @@ import os
 import sys
 import zipimport
 
+import BUILD_CONSTANTS
+
 sys.frozen = True
 
 FILE_NAME = sys.executable
 DIR_NAME = os.path.dirname(sys.executable)
 
-os.environ["TCL_LIBRARY"] = os.path.join(DIR_NAME, "tcl")
-os.environ["TK_LIBRARY"] = os.path.join(DIR_NAME, "tk")
+if hasattr(BUILD_CONSTANTS, "HAS_TKINTER"):
+    os.environ["TCL_LIBRARY"] = os.path.join(DIR_NAME, "tcl")
+    os.environ["TK_LIBRARY"] = os.path.join(DIR_NAME, "tk")
 
+if hasattr(BUILD_CONSTANTS, "HAS_MATPLOTLIB"):
+    os.environ["MATPLOTLIBDATA"] = os.path.join(DIR_NAME, "mpl-data")
+
+if hasattr(BUILD_CONSTANTS, "HAS_PYTZ"):
+    os.environ["PYTZ_TZDATADIR"] = os.path.join(DIR_NAME, "pytz-data")
 
 def run():
     m = __import__("__main__")
