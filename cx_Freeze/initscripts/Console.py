@@ -22,9 +22,9 @@ if hasattr(BUILD_CONSTANTS, "HAS_TKINTER"):
 if hasattr(BUILD_CONSTANTS, "HAS_MATPLOTLIB"):
     os.environ["MATPLOTLIBDATA"] = os.path.join(DIR_NAME, "mpl-data")
 
-if hasattr(BUILD_CONSTANTS, "HAS_PYTZ"):
-    os.environ["PYTZ_TZDATADIR"] = os.path.join(DIR_NAME, "pytz-data")
-
+if hasattr(BUILD_CONSTANTS, "PYTZ_TZDATADIR"):
+    os.environ["PYTZ_TZDATADIR"] = os.path.join(DIR_NAME,
+                                                BUILD_CONSTANTS.PYTZ_TZDATADIR)
 def run():
     m = __import__("__main__")
     importer = zipimport.zipimporter(os.path.dirname(os.__file__))
