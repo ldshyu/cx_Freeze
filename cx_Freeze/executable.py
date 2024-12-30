@@ -74,12 +74,17 @@ class Executable:
 
     @base.setter
     def base(self, name: str | Path | None) -> None:
-        # The default base is the legacy console, except for
+        # The default base is the legacy console, except for Python 3.13t and
         # Python 3.13 on macOS, that supports only the new console
-        if IS_MACOS and sys.version_info[:2] >= (3, 13):
-            name = name or "console"
-        else:
+        version = sys.version_info[:2]
+        if (
+            version <= (3, 13)
+            and get_config_var("abi_thread") is None
+            and not (IS_MACOS and version == (3, 13))
+        ):
             name = name or "console_legacy"
+        else:
+            name = name or "console"
         # silently ignore gui and service on non-windows systems
         if not (IS_WINDOWS or IS_MINGW) and name in ("gui", "service"):
             name = "console"

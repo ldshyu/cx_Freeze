@@ -61,7 +61,7 @@ dynamic = ["version"]
 
 [project.optional-dependencies]
 dev = [
-    "bump-my-version==0.29.0",
+    "bump-my-version==0.29.0 ;python_version < '3.13'",
     "cibuildwheel==2.22.0",
     "pre-commit==4.0.1",           # python_version >= 3.9
 ]
@@ -165,10 +165,12 @@ before-build = "uv pip install -r requirements.txt"
 build = "cp3*"
 build-frontend = "build[uv]"
 build-verbosity = 1
+enable = ["cpython-freethreading"]
 skip = [
     "cp3{9,10,13}-musllinux_*",
     "cp3{9,10,13}-manylinux_ppc64le",
     "cp3{9,10}-macosx_{universal2,arm64}",
+    "cp313t-win*",
 ]
 
 [tool.cibuildwheel.linux]
