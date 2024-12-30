@@ -104,43 +104,43 @@ def load_cryptography_hazmat_bindings__padding(finder, module):
     finder.IncludeModule('_cffi_backend')
 
 
-def load_Crypto_Cipher(finder, module):
+def load_Cryptodome_Cipher(finder, module):
     """pycryptodome package - Crypto.Cipher subpackage."""
     if not module.WillBeStoredInFileSystem():
         finder.IncludePackage(module.name)
 
 
-def load_Crypto_Hash(finder, module):
+def load_Cryptodome_Hash(finder, module):
     """pycryptodome package - Crypto.Hash subpackage."""
     if not module.WillBeStoredInFileSystem():
         finder.IncludePackage(module.name)
 
 
-def load_Crypto_Math(finder, module):
+def load_Cryptodome_Math(finder, module):
     """pycryptodome package - Crypto.Math subpackage."""
     if not module.WillBeStoredInFileSystem():
         finder.IncludePackage(module.name)
 
 
-def load_Crypto_Protocol(finder, module):
+def load_Cryptodome_Protocol(finder, module):
     """pycryptodome package - Crypto.Protocol subpackage."""
     if not module.WillBeStoredInFileSystem():
         finder.IncludePackage(module.name)
 
 
-def load_Crypto_PublicKey(finder, module):
+def load_Cryptodome_PublicKey(finder, module):
     """pycryptodome package - Crypto.PublicKey subpackage."""
     if not module.WillBeStoredInFileSystem():
         finder.IncludePackage(module.name)
 
 
-def load_Crypto_Util(finder, module):
+def load_Cryptodome_Util(finder, module):
     """pycryptodome package - Crypto.Util subpackage."""
     if not module.WillBeStoredInFileSystem():
         finder.IncludePackage(module.name)
 
 
-def load_Crypto_Util__file_system(finder, module):
+def load_Cryptodome_Util__file_system(finder, module):
     """pycryptodome package"""
     # WARNING: do not touch this code string
     PYCRYPTODOME_CODE_STR = """
@@ -148,8 +148,8 @@ import os
 
 def pycryptodome_filename(dir_comps, filename):
     import sys
-    if dir_comps[0] != "Crypto":
-        raise ValueError("Only available for modules under 'Crypto'")
+    if dir_comps[0] != "Cryptodome":
+        raise ValueError("Only available for modules under 'Cryptodome'")
     dir_comps = list(dir_comps) + [filename]
     root_lib = os.path.join(os.path.dirname(sys.executable), "lib")
     return os.path.join(root_lib, ".".join(dir_comps))
