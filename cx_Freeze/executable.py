@@ -79,7 +79,7 @@ class Executable:
         version = sys.version_info[:2]
         if (
             version <= (3, 13)
-            and get_config_var("abi_thread") is None
+            and (get_config_var("abi_thread") or "") == ""
             and not (IS_MACOS and version == (3, 13))
         ):
             name = name or "console_legacy"

@@ -276,7 +276,7 @@ def get_extensions() -> list[Extension]:
         os.environ.get("CI", "") != "true"
         or os.environ.get("CIBUILDWHEEL", "0") != "1"
     )
-    abi_thread = get_config_var("abi_thread")
+    abi_thread = get_config_var("abi_thread") or ""
     version = sys.version_info[:2]
     extensions = [
         Extension(
@@ -287,7 +287,7 @@ def get_extensions() -> list[Extension]:
     ]
     if (
         version <= (3, 13)
-        and abi_thread is None
+        and abi_thread == ""
         and not (IS_MACOS and version == (3, 13))
     ):
         extensions += [
@@ -299,7 +299,7 @@ def get_extensions() -> list[Extension]:
             )
         ]
     if IS_MINGW or IS_WINDOWS:
-        if version <= (3, 13) and abi_thread is None:
+        if version <= (3, 13) and abi_thread == "":
             extensions += [
                 Extension(
                     "cx_Freeze.bases.Win32GUI",

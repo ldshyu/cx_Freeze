@@ -244,7 +244,7 @@ TEST_VALID_PARAMETERS = [
 ]
 if (
     sys.version_info[:2] <= (3, 13)
-    and get_config_var("abi_thread") is None
+    and (get_config_var("abi_thread") or "") == ""
     and not (IS_MACOS and sys.version_info[:2] == (3, 13))
 ):
     TEST_VALID_PARAMETERS += [
